@@ -1,9 +1,20 @@
+import asyncio
 import os
+
 import discord
 from dotenv import load_dotenv
-from josh import strip_mention, get_josh_response
+
+from josh import get_josh_response, strip_mention
 
 load_dotenv()
+
+
+def _require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"{name} environment variable is not set")
+    return value
+
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -18,7 +29,7 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
+    if message.author.bot:
         return
     if bot.user not in message.mentions:
         return
@@ -28,9 +39,13 @@ async def on_message(message):
         user_text = "hey"
 
     async with message.channel.typing():
-        reply = get_josh_response(user_text)
+        loop = asyncio.get_event_loop()
+        try:
+            reply = await loop.run_in_executor(None, get_josh_response, user_text)
+        except Exception:
+            reply = "Something broke. Probably not Ohtani's fault."
 
     await message.channel.send(reply)
 
 
-bot.run(os.getenv("DISCORD_TOKEN"))
+bot.run(_require_env("DISCORD_TOKEN"))
