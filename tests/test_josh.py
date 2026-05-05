@@ -1,16 +1,7 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
-from josh import strip_mention, build_messages, SYSTEM_PROMPT
+from josh import strip_mention, build_messages, SYSTEM_PROMPT, get_josh_response
 import josh
-
-
-@pytest.fixture(autouse=True)
-def reset_josh_client():
-    """Reset the cached OpenAI client between tests to prevent state leakage."""
-    josh._client = None
-    yield
-    josh._client = None
 
 
 def test_strip_mention_removes_mention():
@@ -50,7 +41,6 @@ def test_get_josh_response_returns_openai_content():
     mock_client.chat.completions.create.return_value = mock_response
 
     with patch("josh._get_client", return_value=mock_client):
-        from josh import get_josh_response
         result = get_josh_response("what should I do today?")
 
     assert result == "Ohtani would handle it."
@@ -64,7 +54,6 @@ def test_get_josh_response_passes_correct_model():
     mock_client.chat.completions.create.return_value = mock_response
 
     with patch("josh._get_client", return_value=mock_client):
-        from josh import get_josh_response
         get_josh_response("hey")
         call_kwargs = mock_client.chat.completions.create.call_args.kwargs
         assert call_kwargs["model"] == "gpt-4o-mini"
